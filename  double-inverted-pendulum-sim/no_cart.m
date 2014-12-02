@@ -1,7 +1,7 @@
 %Victoria Preston & Bill Warner - Control of a Double Bar Pendulum
 %based on "Victoria Preston - Dynamics - Double Bar Pendulum"
 
-function double_bar_pendulum
+function no_cart
 clf;
 
 %% System & Simulation Parameters
@@ -12,14 +12,14 @@ m2 = 1;
 l1 = 1;
 l2 = 1;
 I1 = 1/3*m1*l1^2;
-I1COM = 1/12*m1*l1^2;
+%I1COM = 1/12*m1*l1^2;
 I2 = 1/12*m2*l2^2;
 I2COM = 1/12*m2*l2^2;
 % Simulation Parameters
-time = 0:0.01:2;
+time = 0:0.01:20;
 % Initial conditions
 theta1 = pi;
-theta2 = pi+0.1;
+theta2 = pi+0.01;
 theta1dot = 0;
 theta2dot = 0;
 
@@ -50,6 +50,11 @@ clf;
 hold on;
 plot(x1, y1, 'g-')
 plot(x2, y2, 'r-')
+
+figure;
+hold on;
+plot(T,rem(X(:,1),2*pi), 'g-');
+plot(T,rem(X(:,2),2*pi), 'r-');
 
 figure;
 hold on;
@@ -93,12 +98,26 @@ function alpha = control(Z)
     t2A = rem(t2,2*pi); % 0 to 2pi angle
     td1 = Z(3);
     td2 = Z(4);
-    p = 1000;
+    p = 0.0100;
     torque = p*(pi-t1A);
     % Converty to angular acceleration for simulation
-    r = l1^2 + l2^2 - 2*l1*l2*cos(t1A+t2A); % radius to second bar
+    r = sqrt(l1^2 + (l2/2)^2 - 2*l1*(l2/2)*cos(t1A+t2A)); % radius to second bar
     I_system = I2COM + m2*r^2; % Unrotated Moment of Inertia about origin
     alpha = torque/I_system;
+end
+
+function alpha2 = control2(Z)
+    t1 = Z(1); % Angle of first bar
+    t1A = rem(t1,2*pi); % 0 to 2pi angle
+    t2 = Z(2); % Angle of second bar
+    t2A = rem(t2,2*pi); % 0 to 2pi angle
+    td1 = Z(3);
+    td2 = Z(4);
+    p = -10;
+    torque = p*(pi-t2A);
+    % Converty to angular acceleration for simulation
+    I_system = I2; % Unrotated Moment of Inertia about origin
+    alpha2 = torque/I_system;
 end
 
 %% Animation Functions
