@@ -1,30 +1,34 @@
-%Victoria Preston - Dynamics - Double Bar Pendulum
+%Victoria Preston & Bill Warner - Control of a Double Bar Pendulum
+%based on "Victoria Preston - Dynamics - Double Bar Pendulum"
 
 function double_bar_pendulum
 clf;
 
-%Parameters
+%% System & Simulation Parameters
+% System Parameters
 g = 9.81;
 m1 = 1;
 m2 = 1;
 l1 = 1;
 l2 = 1;
-I1 = 1/3;
+I1 = 1/3*m1*l1^2;
 I1COM = 1/12*m1*l1^2;
-I2 = 1/12;
+I2 = 1/12*m2*l2^2;
 I2COM = 1/12*m2*l2^2;
-
-%Opening
+% Simulation Parameters
+time = 0:0.01:2;
+% Initial conditions
 theta1 = pi;
 theta2 = pi+0.1;
 theta1dot = 0;
 theta2dot = 0;
 
+%% Numeric Simulation
 states = [theta1, theta2, theta1dot, theta2dot, 0, 0, 0, 0];
-time = 0:0.01:1.4;
 options = odeset('RelTol', 1e-9, 'AbsTol', 1e-9);
-
 [T,X] = ode45(@swing, time, states, options);
+
+%% Extract State Variables
 x1 = l1*sin(X(:,1));
 y1 = -l1*cos(X(:,1));
 
@@ -37,10 +41,12 @@ y2 = y1-l2*cos(X(:,2));
 x2dot = l1*X(:,3).*cos(X(:,1)) + l2/2*X(:,4).*cos(X(:,2));
 y2dot = l1*X(:,3).*sin(X(:,1)) + l2/2*X(:,4).*sin(X(:,2));
 
+%% Animate
 stuff = [x1, y1, x2, y2];
 animate_func(T, stuff)
 
-figure;
+% figure;
+clf;
 hold on;
 plot(x1, y1, 'g-')
 plot(x2, y2, 'r-')
@@ -53,6 +59,71 @@ legend('Top Bar', 'Bottom Bar')
 title('Angular Displacement over time')
 xlabel('Time')
 ylabel('Radians')
+
+%% Simulation Functions
+function states = swing(T,Z)
+    t1 = Z(1); % Angle of closer bar
+    t2 = Z(2); % Angle of farther bar
+    td1 = Z(3);
+    td2 = Z(4);
+    
+    M = [I1 0 -l1*cos(t1) l1*sin(t1) 0 0; ...
+        0 I2 -l2/2*cos(t2) l2/2*sin(t2) 0 0; ...
+        -m2*l1*cos(t1) -m2*l2/2*cos(t2) -1 0 0 0; ... % control here?
+        m2*l1*sin(t1) m2*l2/2*sin(t2) 0 -1 0 0; ...
+        -m1*l1/2*cos(t1) 0 1 0 1 0; ...
+        0 -m1*l1/2*sin(t1) 0 1 0 1];
+    b = [(-l1/2*m1*g*sin(t1)); ...
+        0; ...
+        (-m1*l1*td1^2*sin(t1) -  m2*l2/2*td2^2*sin(t2)); ...
+        (-m2*g - m2*l1*td1^2*cos(t1) - m2*l2/2*td2^2*cos(t2)); ...
+        (-m1*l1/2*td1^2*sin(t1)); ...
+        (m1*g + m1*l1/2*td1^2*cos(t1))];
+    
+    solver = M\b;
+    solver = solver + [control(Z); 0; 0; 0; 0; 0];
+    % states = [positions; velocities; accelerations; reaction forces];
+    states = [td1; td2; solver];
+end
+
+function alpha = control(Z)
+    t1 = Z(1); % Angle of first bar
+    t1A = rem(t1,2*pi); % 0 to 2pi angle
+    t2 = Z(2); % Angle of second bar
+    t2A = rem(t2,2*pi); % 0 to 2pi angle
+    td1 = Z(3);
+    td2 = Z(4);
+    p = 1000;
+    torque = p*(pi-t1A);
+    % Converty to angular acceleration for simulation
+    r = l1^2 + l2^2 - 2*l1*l2*cos(t1A+t2A); % radius to second bar
+    I_system = I2COM + m2*r^2; % Unrotated Moment of Inertia about origin
+    alpha = torque/I_system;
+end
+
+%% Animation Functions
+function animate_func(T,M)   
+    for i=1:length(T)
+        clf;
+        X1 = [0, M(i,1)];
+        Y1 = [0, M(i,2)];
+        X2 = [M(i,1), M(i,3)];
+        Y2 = [M(i,2), M(i,4)];
+        axis([-2 2 -2 2]);
+        axis square
+        hold on;
+        draw_func(X1, Y1, X2, Y2);
+        drawnow;
+    end
+end
+
+function draw_func(x1, y1, x2, y2)
+    plot(x1, y1, 'r-');
+    plot(x2, y2, 'b-');
+end
+end
+
+%% VALIDATION FIGURES (preserved for posterity)
 
 % figure;
 % hold on;
@@ -78,8 +149,11 @@ ylabel('Radians')
 % xlabel('Time')
 % ylabel('Radians per second squared')
 % 
-% kinetic = 0.5*I1COM*(X(:,3).^2) + 0.5*I2COM*X(:,4).^2 + 0.5*m1*(x1dot.^2 + y1dot.^2) + 0.5*m2*(x2dot.^2 + y2dot.^2);
-% potential = m1*g*(-l1/2*cos(X(:,1))) + m2*g*(-l1*cos(X(:,1))-l2/2*cos(X(:,2)));
+% kinetic = 0.5*I1COM*(X(:,3).^2) + ...
+%     0.5*I2COM*X(:,4).^2 + 0.5*m1*(x1dot.^2 + y1dot.^2) + ...
+%     0.5*m2*(x2dot.^2 + y2dot.^2);
+% potential = m1*g*(-l1/2*cos(X(:,1))) + ...
+%     m2*g*(-l1*cos(X(:,1))-l2/2*cos(X(:,2)));
 % total = kinetic+potential;
 % 
 % figure;
@@ -101,41 +175,3 @@ ylabel('Radians')
 % legend('Ax', 'Ay', 'Ox', 'Oy')
 % xlabel('Time')
 % ylabel('Force, N')
-
-function states = swing(T,Z)
-    t1 = Z(1);
-    t2 = Z(2);
-    td1 = Z(3);
-    td2 = Z(4);
-    
-    M = [I1 0 -l1*cos(t1) l1*sin(t1) 0 0; 0 I2 -l2/2*cos(t2) l2/2*sin(t2) 0 0; -m2*l1*cos(t1) -m2*l2/2*cos(t2) -1 0 0 0; m2*l1*sin(t1) m2*l2/2*sin(t2) 0 -1 0 0; -m1*l1/2*cos(t1) 0 1 0 1 0; 0 -m1*l1/2*sin(t1) 0 1 0 1];
-    b = [(-l1/2*m1*g*sin(t1)); 0; (-m1*l1*td1^2*sin(t1) -  m2*l2/2*td2^2*sin(t2)); (-m2*g - m2*l1*td1^2*cos(t1) - m2*l2/2*td2^2*cos(t2)); (-m1*l1/2*td1^2*sin(t1)); (m1*g + m1*l1/2*td1^2*cos(t1))];
-    
-    solver = M\b;
-    states = [td1; td2; solver];
-
-end
-
-function animate_func(T,M)
-    
-for i=1:length(T)
-clf;
-X1 = [0, M(i,1)];
-Y1 = [0, M(i,2)];
-X2 = [M(i,1), M(i,3)];
-Y2 = [M(i,2), M(i,4)];
-axis([-2 2 -2 2]);
-hold on;
-draw_func(X1, Y1, X2, Y2);
-drawnow;
-end
-end
-
-function draw_func(x1, y1, x2, y2)
-plot(x1, y1, 'r-');
-plot(x2, y2, 'b-');
-end
-
-
-end
-
