@@ -77,7 +77,7 @@ function states = swing(T,Z)
         -m2*l1*cos(t1) -m2*l2/2*cos(t2) -1 0 0 0; ... % control here?
         m2*l1*sin(t1) m2*l2/2*sin(t2) 0 -1 0 0; ...
         -m1*l1/2*cos(t1) 0 1 0 1 0; ...
-        0 -m1*l1/2*sin(t1) 0 1 0 1];
+        0 -m1*l1/2*sin(t1) 0 1 0 1]
     b = [(-l1/2*m1*g*sin(t1)); ...
         0; ...
         (-m1*l1*td1^2*sin(t1) -  m2*l2/2*td2^2*sin(t2)); ...
@@ -96,10 +96,17 @@ function alpha = control(Z)
     t1A = rem(t1,2*pi); % 0 to 2pi angle
     t2 = Z(2); % Angle of second bar
     t2A = rem(t2,2*pi); % 0 to 2pi angle
-    td1 = Z(3);
-    td2 = Z(4);
-    p = 0.0100;
-    torque = p*(pi-t1A);
+%     td1 = Z(3);
+%     td2 = Z(4);
+    p = 0.01;
+    beta = pi + t1A - t2A; % Angle between bars
+    C = 0.5*sqrt(l1^2+l2^2-2*l1*l2*cos(beta));
+    zeta = asin(-l2*sin(beta)/(2*C));
+    OC = sqrt((l1/2)^2+(C/2)^2-2*(l1/2)*(C/2)*cos(zeta));
+    COM_angle = -l2*sin(beta)/(4*OC);
+    error = pi-t1A;
+%     error = pi-COM_angle;
+    torque = p*error;
     % Converty to angular acceleration for simulation
     r = sqrt(l1^2 + (l2/2)^2 - 2*l1*(l2/2)*cos(t1A+t2A)); % radius to second bar
     I_system = I2COM + m2*r^2; % Unrotated Moment of Inertia about origin
