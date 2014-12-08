@@ -18,8 +18,8 @@ I2COM = 1/12*m2*l2^2;
 %Opening
 xc = 0;
 xcdot = 0;
-theta1 = pi;
-theta2 = pi+0.1;
+theta1 = pi/2;
+theta2 = pi/2;
 theta1dot = 0;
 theta2dot = 0;
 
