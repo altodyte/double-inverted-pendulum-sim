@@ -20,7 +20,7 @@ xc = 0;
 xcdot = 0;
 theta1 = 0;
 theta1dot = 0;
-theta2 = 0.1;
+theta2 = 0.01;
 theta2dot = 0;
 Rx = 0;
 Ry = 0;
@@ -29,7 +29,7 @@ Py = 0;
 inputs = [xc, theta1, theta2, xcdot, theta1dot, theta2dot, Rx, Ry, Px, Py];
 
 %ODE
-time = [0:0.01:10];
+time = [0:0.01:1];
 [T,X] = ode45(@swing, time, inputs);
 
 xc_pos = X(:,1);
@@ -60,21 +60,21 @@ plot(link2_end_x, link2_end_y, 'g-');
         td2 = Z(6);
         %Rx = Z(7), Ry = Z(8), Px = Z(9), Py = Z(10)
          
-        row1 = [-1 0 0 0 0 0 0];
-        row2 = [0 -m1*l1/2*sin(t1) 0 1 0 1 0];
+        row1 = [-mc 0 0 -1 0 0 0];
+        row2 = [-m1 m1*l1/2*sin(t1) 0 1 0 1 0];
         row3 = [0 m1*l1/2*cos(t1) 0 0 1 0 1];
-        row4 = [0 I1 0 0 0 l1*cos(t1) l1*sin(t1)];
-        row5 = [0 -m2*l1*sin(t1) -m2*l2/2*sin(t2) 0 0 1 0];
-        row6 = [0 -m2*l1*cos(t1) -m2*l2/2*cos(t2) 0 0 0 1];
+        row4 = [0 -I1 0 0 0 -l1*cos(t1) -l1*sin(t1)];
+        row5 = [-m2 m2*l1*sin(t1) m2*l2/2*sin(t2) 0 0 -1 0];
+        row6 = [0 m2*l1*cos(t1) m2*l2/2*cos(t2) 0 0 0 -1];
         row7 = [0 0 -I2 0 0 -l2/2*cos(t2) -l2/2*sin(t2)];
         M = [row1; row2; row3; row4; row5; row6; row7];
         
         stuff = [0; 
-            m1*l1/2*td1^2*cos(t1); 
-            m1*g - m1*l1/2*td1^2*sin(t1); 
+            -m1*l1/2*td1^2*cos(t1); 
+            m1*g + m1*l1/2*td1^2*sin(t1); 
             l1/2*m1*g*sin(t1); 
-            m2*(l1*td1^2*cos(t1) - l2/2*td2^2*cos(t2)); 
-            -m2*g - m2*(l1*td1^2*sin(t1) - l2/2*td2^2*sin(t2));  
+            -m2*(l1*td1^2*cos(t1) + l2/2*td2^2*cos(t2)); 
+            m2*g + m2*(l1*td1^2*sin(t1) + l2/2*td2^2*sin(t2));  
             0 ];
         
         solver = M\stuff;
