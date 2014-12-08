@@ -113,11 +113,11 @@ function states = swing(T,Z)
     
     M = [0 I1 0 -l1*cos(t1) l1*sin(t1) 0 0; 
         0 0 I2 -l2/2*cos(t2) l2/2*sin(t2) 0 0; 
-        0 -m2*l1*cos(t1) -m2*l2/2*cos(t2) -1 0 0 0; 
+        -m2 -m2*l1*cos(t1) -m2*l2/2*cos(t2) -1 0 0 0; 
         0 m2*l1*sin(t1) m2*l2/2*sin(t2) 0 -1 0 0; 
-        0 -m1*l1/2*cos(t1) 0 1 0 1 0; 
+        -m1 -m1*l1/2*cos(t1) 0 1 0 1 0; 
         0 0 -m1*l1/2*sin(t1) 0 1 0 1; 
-        -1 0 0 0 0 -1/mc 0];
+        -mc 0 0 0 0 -1 0];
     
     b = [(-l1/2*m1*g*sin(t1)); 
         0; 
@@ -136,18 +136,21 @@ function animate_func(T,M)
     
 for i=1:length(T)
 clf;
+XC = [M(i,1) - 0.1, M(i,1) + 0.1];
+YC = [0, 0];
 X1 = [M(i,1), M(i,2)];
 Y1 = [0, M(i,3)];
 X2 = [M(i,2), M(i,4)];
 Y2 = [M(i,3), M(i,5)];
 axis([-2 2 -2 2]);
 hold on;
-draw_func(X1, Y1, X2, Y2);
+draw_func(XC, YC, X1, Y1, X2, Y2);
 drawnow;
 end
 end
 
-function draw_func(x1, y1, x2, y2)
+function draw_func(xc, yc, x1, y1, x2, y2)
+plot(xc, yc, 'k-')    
 plot(x1, y1, 'r-');
 plot(x2, y2, 'b-');
 end
