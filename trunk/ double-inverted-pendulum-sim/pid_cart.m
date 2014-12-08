@@ -1,6 +1,6 @@
 %Victoria Preston - Dynamics - Double Bar Pendulum
 
-function double_bar_pendulum
+function pid_cart
 clf;
 
 %Parameters
@@ -55,53 +55,6 @@ title('Angular Displacement over time')
 xlabel('Time')
 ylabel('Radians')
 
-% figure;
-% hold on;
-% plot(T,X(:,3), 'g-')
-% plot(T, X(:,4), 'r-')
-% legend('Top Bar', 'Bottom Bar')
-% title('Angular Velocity over time')
-% xlabel('Time')
-% ylabel('Radians/second')
-% 
-% for j = 1:length(T)-1
-% theta1ddot(j) = (X(j+1,3)-X(j,3))/(T(j+1)-T(j));
-% theta2ddot(j) = (X(j+1,4)-X(j,4))/(T(j+1)-T(j));
-% t(j) = T(j);
-% end
-% 
-% figure;
-% hold on;
-% plot(t,theta1ddot, 'g-')
-% plot(t, theta2ddot, 'r-')
-% legend('Top Bar', 'Bottom Bar')
-% title('Angular Acceleration over time')
-% xlabel('Time')
-% ylabel('Radians per second squared')
-% 
-% kinetic = 0.5*I1COM*(X(:,3).^2) + 0.5*I2COM*X(:,4).^2 + 0.5*m1*(x1dot.^2 + y1dot.^2) + 0.5*m2*(x2dot.^2 + y2dot.^2);
-% potential = m1*g*(-l1/2*cos(X(:,1))) + m2*g*(-l1*cos(X(:,1))-l2/2*cos(X(:,2)));
-% total = kinetic+potential;
-% 
-% figure;
-% hold on;
-% plot(T,kinetic, 'g-')
-% plot(T, potential, 'r-')
-% plot(T, total, 'k-')
-% legend('Kinetic', 'Potential', 'Total')
-% title('Energy over time')
-% xlabel('Time')
-% ylabel('Energy')
-% 
-% figure;
-% hold on;
-% plot(T, X(:,5), 'b-')
-% plot(T, X(:,6), 'm-')
-% plot(T, X(:,7), 'k-')
-% plot(T, X(:,8), 'r-')
-% legend('Ax', 'Ay', 'Ox', 'Oy')
-% xlabel('Time')
-% ylabel('Force, N')
 
 function states = swing(T,Z)
     x_pos = Z(1);
@@ -128,9 +81,32 @@ function states = swing(T,Z)
         0];
     
     solver = M\b;
-    states = [x_vel; td1; td2; solver];
+    states = [x_vel; td1; td2; solver] + [0; 0; 0; control(Z); 0; 0; 0; 0; 0; 0];
 
 end
+
+function accel = control(Z)
+    t1 = Z(2); % Angle of first bar
+    t1A = rem(t1,2*pi); % 0 to 2pi angle
+    t2 = Z(3); % Angle of second bar
+    t2A = rem(t2,2*pi); % 0 to 2pi angle
+    p = 0.1;
+    beta = pi + t1A - t2A; % Angle between bars
+    C = 0.5*sqrt(l1^2+l2^2-2*l1*l2*cos(beta));
+    zeta = asin(-l2*sin(beta)/(2*C));
+    OC = sqrt((l1/2)^2+(C/2)^2-2*(l1/2)*(C/2)*cos(zeta));
+    COM_angle = -l2*sin(beta)/(4*OC);
+    %error = pi-t1A;
+    error = pi-COM_angle;
+    torque = p*error;
+    % Converty to angular acceleration for simulation
+    r = sqrt(l1^2 + (l2/2)^2 - 2*l1*(l2/2)*cos(t1A+t2A)); % radius to second bar
+    I_system = I2COM + m2*r^2; % Unrotated Moment of Inertia about origin
+    alpha = torque/I_system;
+    % convert to linear acceleration of the cart
+    accel = torque/r/(m1+m2);
+end
+        
 
 function animate_func(T,M)
     
